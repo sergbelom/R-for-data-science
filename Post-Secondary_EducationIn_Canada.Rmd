@@ -1,0 +1,329 @@
+---
+title: "Образование в Канаде"
+author: "Сергей Беломестных"
+date: '5 января 2018'
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r MainProcessing, echo=FALSE , message=FALSE, error = FALSE , warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE , fig.width = 12 , warning=FALSE , message = FALSE , cache = TRUE )
+library(knitr)
+library(xtable)
+library(dplyr)
+library(rmarkdown)
+
+#считываем набор данных (порядка 70 мбайт)
+PostsecondaryCanada <- data.frame(read.csv("PostsecondaryCanada.csv"))
+PostsecondaryCanada$GroupCode <- as.integer(as.vector(PostsecondaryCanada$Code_Classification_of_Instructional_Program_6digit_Name))
+
+#определяем переменные для каждой области, Code_Programm - рассматриваемая область математика, физика, информатика и т.п.
+Code_Programm <- c(3, 4, 11, 14, 15, 26, 27, 29, 30, 40, 41, 46, 47, 48, 49)
+humanCode <- c(5, 9, 12, 16, 19, 22, 23, 24, 25, 30, 32, 33, 35, 36, 38, 39, 42, 44, 45, 50, 54, 55)
+bussManagCode <- c(30, 52)
+medCode <- c(30, 34, 60)
+eduCode <- c(13, 21, 30, 51, 53)
+argCode <- c(1, 30)
+sequrityCode <- c( 30, 28, 36, 43)
+fitnessCode <- c(30, 31, 37)
+
+#формируем датафреймы для каждой области
+PostsecondaryCanadaTechno <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% Code_Programm)
+
+PostsecondaryCanadaTechno$Institution_Name = factor(PostsecondaryCanadaTechno$Institution_Name)
+
+PostsecondaryCanadaHuman <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% humanCode)
+
+PostsecondaryCanadaBussMang <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% bussManagCode)
+
+PostsecondaryCanadaMed <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% medCode)
+
+PostsecondaryCanadaEdu <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% eduCode)
+
+PostsecondaryCanadaAgr <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% argCode)
+
+PostsecondaryCanadaSecurity <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% sequrityCode)
+
+PostsecondaryCanadaFitness <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode %in% fitnessCode)
+
+#подвыборка только для междиципл исследований
+PostsecondaryCanadaInterDicsp <- PostsecondaryCanada %>%
+  group_by( GroupCode ) %>%
+  select(Institution_Type, Institution_Name,Classification_of_Instructional_Program_6digit_Name,GroupCode ) %>%
+  filter( GroupCode == 30)
+
+allCount = length(PostsecondaryCanada$GroupCode)
+
+#поправка на междицпл исследования вносится во все группы (всего специальностей такого профиля около 12000, поправка вносится с весовым коэффициентом)
+deltaInterDispl = 9000 
+
+technoCount = as.integer(length(PostsecondaryCanadaTechno$GroupCode) - deltaInterDispl)
+humanCount = length(PostsecondaryCanadaHuman$GroupCode) - deltaInterDispl
+mangCount = length(PostsecondaryCanadaBussMang$GroupCode) - deltaInterDispl
+medCount = length(PostsecondaryCanadaMed$GroupCode) - deltaInterDispl
+eduCount = length(PostsecondaryCanadaEdu$GroupCode) - deltaInterDispl
+agrCount = length(PostsecondaryCanadaAgr$GroupCode) - deltaInterDispl
+securityCount = length(PostsecondaryCanadaSecurity$GroupCode) - deltaInterDispl
+fitnessCount = length(PostsecondaryCanadaFitness$GroupCode) - deltaInterDispl
+
+techPerc = round((technoCount/allCount)*100)
+humanPerc = round((humanCount/allCount)*100)
+mangPerc = round((mangCount/allCount)*100)
+medPerc = round((medCount/allCount)*100)
+eduPerc = round((eduCount/allCount)*100)
+agrPerc = round((agrCount/allCount)*100)
+secPerc = round((securityCount/allCount)*100)
+fitnessPerc = round((fitnessCount/allCount)*100)
+
+# определяем процент каждой области в датайреме
+Name <- c( c("Математические, компьютерные, инженерные и естественно-научные направления"),
+                          c("Гуманитарные направления(в т.ч. иностранные языки, юриспруденция)"),
+                          c("Бизнес, менеджмент, экономика"),
+                          c("Медицина"),
+                          c("Образование"),
+                          c("Сельское хозяйство"),
+                          c("Безопасность, военное дело"),
+                          c("Физкультура"))
+Percent <- c(techPerc,humanPerc,mangPerc,medPerc,eduPerc,agrPerc,secPerc,fitnessPerc)
+
+allStatisticFieldPercDF <- data.frame(Name,Percent)
+
+techno3 <- c("Природные ресурсы и Охрана природы")
+techno4 <- c("Архитектура и сопутствующие услуги")
+techno11 <- c("Компьютерные и информационные науки и службы поддержки")
+techno14 <- c("Инжиниринг")
+techno15 <- c("Инженерные технологии и технические области")
+techno26 <- c ("Биологические и биомедицинские науки")
+techno27 <- c("Математика и статистика")
+techno29 <- c("Военные технологии и прикладные науки")
+techno30 <- c("Междисциплинарные / междисциплинарные исследования")
+techno40 <- c("Физические науки")
+techno41 <- c("Научные технологии / техники")
+techno46 <- c("Строительство")
+techno47 <- c("Технологии механики и ремонта / технический персонал")
+techno48 <- c("Точное производство")
+techno49 <- c("Транспортировка и перемещение материалов")
+
+Name_Programm <- c(techno3,techno4,techno11,techno14,techno15,techno26,techno27,techno29,techno30,techno40,techno41,techno46,techno47,techno48,techno49)
+
+technoDF <- data.frame( Name_Programm , Code_Programm )
+
+
+# анализируем распределение математических специальностей по колледжам и вузам
+testMath <- c("Math")
+resMath <- grep(pattern = testMath , PostsecondaryCanada$Classification_of_Instructional_Program_6digit_Name)
+onlyMath <- slice(PostsecondaryCanada,resMath)
+
+gr_Institution_Name_with_Math_subject <- onlyMath %>%
+  group_by(Institution_Name) %>%
+  summarise(records = n())
+
+# анализируем распределение математических и компьютерных специальностей по PostsecondaryCanadaTechno
+
+# распределение математических специальностей по PostsecondaryCanadaTechno
+
+test2Math <- c("Math")
+res2Math <- grep(pattern = test2Math , PostsecondaryCanada$Classification_of_Instructional_Program_6digit_Name , ignore.case = T)
+only2Math <- slice(PostsecondaryCanada,res2Math)
+
+test2hCompute <- c("*computer*")
+res2Compute <- grep(pattern = test2hCompute , PostsecondaryCanada$Classification_of_Instructional_Program_6digit_Name , ignore.case = T)
+only2Compute <- slice(PostsecondaryCanada,res2Compute)
+
+onlyMathCompute <- merge( only2Math ,  only2Compute , all = T )
+
+gr_Group_Code_with_MathCompute_subject <- onlyMathCompute %>%
+  group_by( GroupCode ) %>%
+  summarise(records = n())
+
+gr_Group_Code_with_MathCompute_subject$GroupCode <- factor(gr_Group_Code_with_MathCompute_subject$GroupCode )
+
+GroupCode1 <- c(3,4,29,41,46,48,49) 
+records1 <- c( rep(0,7) )
+gr_Group_Code_with_MathCompute_subjectNULL <- data.frame( GroupCode = GroupCode1  , records = records1 )
+gr_Group_Code_with_MathCompute_subjectNULL$GroupCode <- factor(gr_Group_Code_with_MathCompute_subjectNULL$GroupCode)
+
+#мержим математику и комп науки
+gr_Group_Code_with_MathCompute_subjectALL <- merge(gr_Group_Code_with_MathCompute_subject , gr_Group_Code_with_MathCompute_subjectNULL , all = T)
+# удаляем строк, которые не входят в тех науки
+gr_Group_Code_with_MathCompute_subjectALL <- gr_Group_Code_with_MathCompute_subjectALL[-c(2,10),]
+
+#сортируем и делаем итоговый массив для получения датафрейма для теста Шапиро Вилка теста
+gr_Group_Code_with_MathCompute_subjectALL$GroupCode <- as.numeric(gr_Group_Code_with_MathCompute_subjectALL$GroupCode)
+dataMathComputeForShapTest <- gr_Group_Code_with_MathCompute_subjectALL %>%
+  arrange( GroupCode )
+#дбавляем столбец с именем специальности по коду
+dataMathComputeForShapTest$Name <- Name_Programm
+
+dataMathComputeForShapTest$GroupCode <- factor(dataMathComputeForShapTest$GroupCode)
+
+
+#применяем тест Шапиро-Вилко к вектору records
+ResultShapiroTest <- shapiro.test(dataMathComputeForShapTest$records )
+
+
+
+#RESULTTABLEFORPRINT <- data.frame( dataMathComputeForShapTest$Name , dataMathComputeForShapTest$GroupCode , dataMathComputeForShapTest$records )
+
+#делаем тест Шапиро-Вилко
+ResultShapiroTest <- shapiro.test(dataMathComputeForShapTest$records )
+```
+
+## Описание набора данных.
+Набор данных про образование в Канаде содержит информацию по специальностям образования уровня [post-secondary](https://en.wikipedia.org/wiki/Higher_education), которые распределены по колледжам и университетам учебным заведениям. Всего существует 60 направлений специальностей. 
+
+**Набор данных содержит `r allCount ` специальностей по `r length(levels(PostsecondaryCanada$Code_Classification_of_Instructional_Program_6digit_Name)) ` направлению в `r length(levels(PostsecondaryCanada$Institution_Name))` колледжах и университетах Канады.**
+
+```{r fig1, echo=FALSE , fig.align='center',cache=TRUE }
+library(ggplot2)
+ggplot( data = PostsecondaryCanada , aes( GroupCode , fill = Institution_Type )) +
+  geom_histogram()+
+  scale_x_continuous(name = "Код специальности", 
+                     limits = c(1, 60),
+                     breaks = c(seq(0,60,by = 5)))+
+  scale_y_continuous(name = "Количество специальностей в колледжах и университетах",
+                     breaks = c(seq(0,120000,by = 10000)))+
+  scale_fill_manual(values = c("Green","Blue"), 
+                     name = "Тип учебного заведения", 
+                     labels = c("Университет", "Колледж"))+
+  ggtitle(label = "Количество специальностей по всем направлениям")+
+  theme_bw()
+```
+
+
+## Постановка задачи.
+
+Работа главным образом посвящена исследованию распределения математических, компьютерных, инженерных и естественно-научных направлений в Канаде. 
+
+Работа ставит целью проверить нескольких гипотез: 
+
+1. Больше всего специальностей уровня post-secondary в Канаде относится к рассматриваемому набору наук. 
+
+2. Математические специальности равномерно распределены по университетам и колледжам.
+
+3. Математические и компьютерные специальности равномерно распределены в группе математических, компьютерных, инженерных и естественно-научных направлений.
+
+## Гипотеза №1. Математика, Физика, Химия, Биология, Инженерия, Информатика.
+Все 1082 направления разделены на 60 (коды от 01 до 60), источник для наименований - официальный сайт Statistics Canada <http://www.statcan.gc.ca>[^1]
+
+[^1]: [PDF file from Statistics Canada](http://www.statcan.gc.ca/pub/12-590-x/12-590-x2012001-eng.pdf)
+
+Перечень описанных выше наук принадлежит группам: 03, 04, 11, 14, 15, 26, 27, 29, 40, 41, 46, 47, 48, 49 и группе междисциплинарных исследований 30, в которой находятся специальности на стыке наук и технологий, что не исключает попадания в выборку некоторых гуманитарных, медицинских и бизнес специальностей.
+
+```{r table1 , echo=FALSE , fig.align='center'}
+kable( technoDF ,format = 'markdown' )
+```
+
+```{r fig2, echo=FALSE, fig.align='center'}
+library(ggplot2)
+ggplot( data = PostsecondaryCanadaTechno , aes( GroupCode , fill = Institution_Type)) +
+  geom_histogram()+
+  scale_x_continuous(name = "Код специальности", 
+                     limits = c(1, 60),
+                     breaks = c(seq(0,60,by = 5)))+
+  scale_y_continuous(name = "Количество специальностей в колледжах и университетах",
+                     breaks = c(seq(0,120000,by = 10000)))+
+  scale_fill_manual(values = c("Green","Blue"), 
+                    name = "Тип учебного заведения", 
+                    labels = c("Университет", "Колледж"))+
+  ggtitle( label = "Количество специальностей по различным направлениям" , subtitle = "Математика Физика Химия Биология Инженерия Информатика" )+
+  theme_bw()
+```
+
+Всего из `r allCount` специальностей `r technoCount` относятся к рассматриваемым группам, что составляет `r techPerc ` % от общего числа специальностей. На  самом деле немного меньше, потому что в рассмотрение вошли группы междициплинарных специальностей, которые входят во все группы.
+
+```{r table2, echo=FALSE, fig.align='center'}
+kable( allStatisticFieldPercDF ,format = 'markdown' )
+```
+Таким образом, можно сделать следующие заключения:
+
+1. Математические, компьютерные, инженерные и естественно-научные направления не являются наиболее распространенными специальностями в Канаде. Большую долю занимают Гуманитарные направления. Первая гипотеза не верна.
+
+2. Достаточно существенна статистическая ошибка при проведении расчетов, так как междисциплинарные специальности оказывают влияние на все группы. Ошибку при определении доли каждого направления можно оценить в 1.5 %.
+
+##Гипотеза №2. Математические специальности распределены равномерно в колледжах и университетах.
+
+Для проверки гипотезы из набора данных, сформированных только для технических наук была получена информация о количестве математических специальностей в колледжах и вузах. 
+
+Проверка проводилась поиском регулярным выражением в названии специальности ключевого слова *math* в любом регистре.
+
+В результате обработки данных было получено, что во всех колледжах и университетах существует по 20 математических специальностей. Таким образом, математические специальности распределены равномерно и гипотеза верна. 
+
+Факт того, что в каждом учебном заведении существует по 22 математических специальностей снижает уровень достоверности информации в представленном наборе данных и делает невозможным применение проверок на нормальность средствами языка R.
+
+##Гипотеза №3. Математические и компьютерные специальности распределены равномерно в рассматриваемой группе наук.
+
+Для проверки гипотезы из набора данных была получена информация о количестве математических и компьютерных специальностей для каждой группы из таблицы 1.
+
+Проверка проводилась поиском регулярным выражением в названии специальности ключевых слов *math* и *computer* без учета регистра.
+
+Области и их код, в которых найдены математические и компьютерные специальнотси приведены в таблице, для остальных областей из рассматриваемых наук число специальностей равно нулю.
+
+```{r table3 , echo=FALSE , fig.align='center' , message=FALSE , error=FALSE , warning = FALSE }
+
+gr_Group_Code_with_MathCompute_subjectClear <- gr_Group_Code_with_MathCompute_subject[-c(2,8),]
+
+RESULTTABLEFORPRINT <- data.frame(Name = c("Компьютерные и информационные науки и службы поддержки",
+                                           "Инжиниринг",
+                                           "Инженерные технологии и технические области",
+                                           "Биологические и биомедицинские науки",
+                                           "Математика и статистика",
+                                           "Междисциплинарные / междисциплинарные исследования",
+                                           "Физические науки",
+                                           "Технологии механики и ремонта / технический персонал"),
+  
+                                GroupCode = gr_Group_Code_with_MathCompute_subjectClear$GroupCode ,
+                                Count = gr_Group_Code_with_MathCompute_subjectClear$records )
+
+kable( RESULTTABLEFORPRINT ,format = 'markdown' )
+```
+ Для этой небольшой выборки был применен тест Шапиро-Уилко и получены слудеющие результаты:
+ 
+ $$W = `r ResultShapiroTest$statistic`$$
+ $$P value = `r ResultShapiroTest$p.value`$$
+  
+Таким образом, можно отклонить нулевую гипотезу о равномерном распределении математических и компьютерных специальностей в рассматриваемых областях.
+
+##Выводы:
+1. Математические, компьютерные, инженерные и естественно-научные направления не являются самыми распространенными специальностями в Канаде и уступают направлениям гуманитарным, в сфере бизнеса и менеджмента. 
+
+2. Математические специальности распределены равномерно в колледжах и университетах Канады. 
+
+3. Математические и компьютерные специальности распределены неравномерно в группе математических, компьютерных, инженерных и естественно-научных направлений.
+
+4. Недостатки статистических данных: 
+    + отсутствие информации о количестве человек, обучающихся на каждой специальности и территориального распределения учебных заведений;
+    + наличие большой группы междисциплинарных специальностей;
+    + наличие информации о том, что каждая специальность присутствует в каждом учебном заведении снижает достоверность проверки на равномерность распределения отдельных специальностей. 
+
+```{r procc_NA, echo=FALSE}
+#БЛОК с разными вычислениями
+#Исключение пропущенных значений:
+# Предобработка набора данных
+#length(PostsecondaryCanada$GroupCode[is.na(PostsecondaryCanada$GroupCode)]) # "наблюдений не имеют кода"
+# ряд налюдений имеют код 89, не входящий в классификаторы
+```
